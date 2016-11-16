@@ -43,6 +43,7 @@ class MyStreamer(TwythonStreamer):
 				print 'inserted ' + data['id_str']
 
 		elif 'delete' in data:
+
 			deleted_status = data['delete']['status']
 
 			cur.execute('SELECT json FROM tweets WHERE id_str = ?', (deleted_status['id_str'],))
@@ -51,9 +52,19 @@ class MyStreamer(TwythonStreamer):
 				print deleted_status['id_str'] + ' not found in db'
 			else:
 				tweet = json.loads(row[0])
+
 				if 'retweeted_status' not in tweet:
-					elapsed = (int(data['delete']['timestamp_ms']) - int(tweet['timestamp_ms'])) / 1000
-					status = 'deleted after ' + nice_interval(elapsed)
+					
+					# Added as it seems old tweets don't have the timestamp_ms property. Defaulting to 1 as division on line 79
+					tweet_timestamp_ms = tweet['timestamp_ms'] if 'timestamp_ms' in tweet else 1
+
+					elapsed = (int(data['delete']['timestamp_ms']) - int(tweet_timestamp_ms)) / 1000
+
+					if elapsed == 1:
+						status = 'deleted after ' + nice_interval(elapsed)
+					else:
+						status = 'delete interval not known'
+
 					if len(tweet['entities']['urls']) > 0:
 						status += "\nlinks in original tweet:"
 						for url in tweet['entities']['urls']:
@@ -64,9 +75,10 @@ class MyStreamer(TwythonStreamer):
 						tweet['user']['screen_name'],\
 						tweet['user']['profile_image_url'],\
 						Twython.html_for_tweet(tweet),\
-						datetime.fromtimestamp(int(tweet['timestamp_ms']) / 1000).replace(tzinfo=dateutil.tz.tzutc()))
+						datetime.fromtimestamp(int(tweet_timestamp_ms) / 1000).replace(tzinfo=dateutil.tz.tzutc()))
 					image = open(image_path, 'rb')
-					rest.update_status_with_media(status=status, media=image)
+					media_id = rest.upload_media(media=image)['media_id']
+					rest.update_status(status=status, media_ids=[media_id])
 					image.close()
 					os.remove(image_path)
 

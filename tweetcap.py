@@ -37,6 +37,7 @@ def tweetcap(template_path, tweet_name, tweet_handle, tweet_avatar, tweet_html, 
 	image.close()
 
 	subprocess.check_call(['wkhtmltoimage', '-f', 'png', temp.name, image.name])
+
 	os.remove(temp.name)
 	trim(image.name, 5)
 	return image.name
