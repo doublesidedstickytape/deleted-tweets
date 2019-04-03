@@ -53,14 +53,13 @@ class MyStreamer(TwythonStreamer):
 				tweet = json.loads(row[0])
 				if 'retweeted_status' not in tweet:
 
-					# For legacy tweets that don't contain a timestamp_ms, we'll default to the created_at
-					# key, and convert it to a timestamp in milliseconds (epoch)
-					created_at_timestamp_ms = time.mktime(time.strptime(tweet['created_at'],"%a %b %d %H:%M:%S +0000 %Y"))
+					# For legacy tweets that don't contain a timestamp_ms, we'll default to
+					# the 'created_at' key, and convert it to a timestamp in milliseconds (epoch)
+					created_at_timestamp_ms = time.mktime(time.strptime(tweet['created_at'],"%a %b %d %H:%M:%S +0000 %Y")) * 1000
 
-					# We'll check whether the timestamp_ms key is in the tweet, else default to the created_at_timestamp_ms
+					# Check whether the timestamp_ms key is in the tweet, else default to the created_at_timestamp_ms
 					tweet_timestamp_ms = tweet['timestamp_ms'] if 'timestamp_ms' in tweet else created_at_timestamp_ms
 
-					# We may need to do something similar with this deleted timestamp_ms... We'll keep an eye on it
 					elapsed = (int(data['delete']['timestamp_ms']) - int(tweet_timestamp_ms)) / 1000
 					status = 'deleted after ' + nice_interval(elapsed)
 
